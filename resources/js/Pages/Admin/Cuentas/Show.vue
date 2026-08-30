@@ -1,11 +1,28 @@
 <script setup>
+import { ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import Modal from '@/Components/Modal.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, Link } from '@inertiajs/vue3';
 
 defineProps({
     cuenta: Object,
     usuarios: Array,
 });
+
+const usuarioSeleccionado = ref(null);
+
+function verUsuario(usuario) {
+    usuarioSeleccionado.value = usuario;
+}
+
+function cerrarModal() {
+    usuarioSeleccionado.value = null;
+}
+
+function formatearRol(nombre) {
+    return nombre ? nombre.replace(/_/g, ' ') : '—';
+}
 </script>
 
 <template>
@@ -83,15 +100,91 @@ defineProps({
                         <li
                             v-for="usuario in usuarios"
                             :key="usuario.id"
-                            class="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
                         >
-                            <span>{{ usuario.name }} ({{ usuario.email }})</span>
-                            <span class="text-xs text-text-3">{{ usuario.estado_global }}</span>
+                            <button
+                                type="button"
+                                @click="verUsuario(usuario)"
+                                class="flex w-full items-center justify-between rounded-lg border border-border p-3 text-left text-sm transition hover:bg-surface-2"
+                            >
+                                <span>{{ usuario.name }} ({{ usuario.email }})</span>
+                                <span class="flex items-center gap-3">
+                                    <span
+                                        class="rounded-full px-2 py-1 text-xs font-semibold"
+                                        :class="usuario.estado_global === 'activo'
+                                            ? 'bg-success-soft text-success'
+                                            : 'bg-danger-soft text-danger'"
+                                    >
+                                        {{ usuario.estado_global }}
+                                    </span>
+                                    <span class="text-xs text-text-3">Ver detalle →</span>
+                                </span>
+                            </button>
                         </li>
                     </ul>
                     <p v-else class="text-sm text-text-3">Sin usuarios asociados.</p>
                 </div>
             </div>
         </div>
+
+        <Modal :show="usuarioSeleccionado !== null" @close="cerrarModal">
+            <div v-if="usuarioSeleccionado" class="p-6">
+                <h3 class="text-lg font-medium text-text">
+                    {{ usuarioSeleccionado.name }} {{ usuarioSeleccionado.primer_apellido }} {{ usuarioSeleccionado.segundo_apellido }}
+                </h3>
+
+                <dl class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <dt class="text-xs uppercase text-text-3">Usuario de acceso</dt>
+                        <dd class="font-mono text-text">{{ usuarioSeleccionado.username }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs uppercase text-text-3">Email</dt>
+                        <dd class="text-text">{{ usuarioSeleccionado.email }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs uppercase text-text-3">Teléfono</dt>
+                        <dd class="text-text">{{ usuarioSeleccionado.telefono ?? '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs uppercase text-text-3">Carnet de identidad</dt>
+                        <dd class="text-text">{{ usuarioSeleccionado.carnet_identidad ?? '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs uppercase text-text-3">Estado</dt>
+                        <dd class="text-text">{{ usuarioSeleccionado.estado_global }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs uppercase text-text-3">Rol en la plataforma</dt>
+                        <dd class="text-text">
+                            {{ usuarioSeleccionado.id === cuenta.owner?.id ? 'Dueño de la cuenta' : 'Colaborador' }}
+                        </dd>
+                    </div>
+                </dl>
+
+                <div class="mt-6">
+                    <h4 class="mb-2 text-sm font-medium text-text">Accesos a negocios</h4>
+                    <ul v-if="usuarioSeleccionado.accesses?.length" class="space-y-2">
+                        <li
+                            v-for="acceso in usuarioSeleccionado.accesses"
+                            :key="acceso.id"
+                            class="rounded-lg border border-border p-3 text-sm"
+                        >
+                            <div class="flex items-center justify-between">
+                                <span class="font-medium">{{ acceso.business?.nombre }}</span>
+                                <span class="text-xs text-text-3">{{ acceso.estado }}</span>
+                            </div>
+                            <div class="text-text-2">
+                                {{ formatearRol(acceso.role?.name) }} · vigencia {{ acceso.tipo_vigencia }}
+                            </div>
+                        </li>
+                    </ul>
+                    <p v-else class="text-sm text-text-3">Sin accesos a negocios registrados.</p>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <SecondaryButton @click="cerrarModal">Cerrar</SecondaryButton>
+                </div>
+            </div>
+        </Modal>
     </AuthenticatedLayout>
 </template>

@@ -38,7 +38,13 @@ class AccountController extends Controller
     {
         $account->load(['owner', 'plan', 'businesses.rubro']);
 
-        $usuarios = User::whereIn('id', $account->relatedUserIds())->get();
+        $businessIds = $account->businesses->pluck('id');
+
+        $usuarios = User::whereIn('id', $account->relatedUserIds())
+            ->with(['accesses' => function ($query) use ($businessIds) {
+                $query->whereIn('business_id', $businessIds)->with(['business', 'role']);
+            }])
+            ->get();
 
         return Inertia::render('Admin/Cuentas/Show', [
             'cuenta' => $account,
