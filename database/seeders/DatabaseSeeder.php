@@ -155,3 +155,7 @@ class DatabaseSeeder extends Seeder
         $this->command?->table(['Rol', 'Usuario', 'Password'], $credenciales);
     }
 }
+// crmelany	password
+// fgcarlos	password
+// mrlaura	password
+// pdana	password

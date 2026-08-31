@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Permission\Models\Role;
 
 class Access extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'user_id',
         'business_id',
@@ -50,5 +53,20 @@ class Access extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    protected function activityAccountId(): ?int
+    {
+        return $this->business?->account_id;
+    }
+
+    protected function activityBusinessId(): ?int
+    {
+        return $this->business_id;
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        return "Acceso de \"{$this->user?->name}\" a \"{$this->business?->nombre}\" ".$this->activityVerbo($action);
     }
 }

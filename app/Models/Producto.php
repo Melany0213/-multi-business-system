@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Producto extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'account_id',
         'nombre',
@@ -59,5 +62,15 @@ class Producto extends Model
         }
 
         return round((($precio - $costo) / $costo) * 100, 2);
+    }
+
+    protected function activityAccountId(): ?int
+    {
+        return $this->account_id;
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        return "Producto \"{$this->nombre}\" ".$this->activityVerbo($action);
     }
 }

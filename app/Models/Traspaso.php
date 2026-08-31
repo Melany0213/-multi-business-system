@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use RuntimeException;
@@ -16,6 +17,8 @@ use RuntimeException;
  */
 class Traspaso extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'producto_id',
         'almacen_origen_id',
@@ -141,5 +144,20 @@ class Traspaso extends Model
             'confirmado_por' => $usuario->id,
             'fecha_confirmacion' => now(),
         ]);
+    }
+
+    protected function activityAccountId(): ?int
+    {
+        return $this->almacenOrigen?->business?->account_id;
+    }
+
+    protected function activityBusinessId(): ?int
+    {
+        return $this->almacenOrigen?->business_id;
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        return "Traspaso #{$this->getKey()} ({$this->estado}) ".$this->activityVerbo($action);
     }
 }

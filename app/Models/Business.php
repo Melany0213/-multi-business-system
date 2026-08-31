@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -10,6 +11,8 @@ use Spatie\Permission\Models\Role;
 
 class Business extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'account_id',
         'rubro_id',
@@ -69,6 +72,26 @@ class Business extends Model
     public function isActive(): bool
     {
         return $this->estado === 'activo';
+    }
+
+    protected function activityAccountId(): ?int
+    {
+        return $this->account_id;
+    }
+
+    protected function activityBusinessId(): ?int
+    {
+        return $this->id;
+    }
+
+    protected function activitySelfReferences(): array
+    {
+        return ['business_id'];
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        return "Negocio \"{$this->nombre}\" ".$this->activityVerbo($action);
     }
 
     protected static function booted(): void

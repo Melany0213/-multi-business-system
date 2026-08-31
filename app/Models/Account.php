@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,8 @@ use Illuminate\Support\Collection;
 
 class Account extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'owner_user_id',
         'nombre_cliente',
@@ -100,5 +103,20 @@ class Account extends Model
             ->push($this->owner_user_id)
             ->unique()
             ->values();
+    }
+
+    protected function activityAccountId(): ?int
+    {
+        return $this->id;
+    }
+
+    protected function activitySelfReferences(): array
+    {
+        return ['account_id'];
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        return "Cuenta \"{$this->nombre_cliente}\" ".$this->activityVerbo($action);
     }
 }

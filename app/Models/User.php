@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Concerns\LogsActivity;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -17,7 +18,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, LogsActivity, Notifiable;
 
     /**
      * Defaults también a nivel de modelo (no solo en la migración): Eloquent
@@ -67,5 +68,10 @@ class User extends Authenticatable
     public function nombreCompleto(): string
     {
         return trim("{$this->name} {$this->primer_apellido} {$this->segundo_apellido}");
+    }
+
+    protected function activityDescription(string $action): string
+    {
+        return "Usuario \"{$this->username}\" ".$this->activityVerbo($action);
     }
 }

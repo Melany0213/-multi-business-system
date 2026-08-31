@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountController;
+use App\Http\Controllers\Admin\PanelController;
 use App\Http\Controllers\Dueno\NegocioController;
 use App\Http\Controllers\Inventario\AlmacenController;
 use App\Http\Controllers\Inventario\ProductoController;
@@ -77,6 +78,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'super_admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/panel', [PanelController::class, 'index'])->name('panel');
+    Route::get('/negocios', [PanelController::class, 'negocios'])->name('negocios.index');
+    Route::get('/actividad', [PanelController::class, 'actividad'])->name('actividad.index');
+
     Route::get('/cuentas', [AccountController::class, 'index'])->name('cuentas.index');
     Route::get('/cuentas/crear', [AccountController::class, 'create'])->name('cuentas.create');
     Route::post('/cuentas', [AccountController::class, 'store'])->name('cuentas.store');
