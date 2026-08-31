@@ -7,7 +7,10 @@ use App\Http\Controllers\Inventario\AlmacenController;
 use App\Http\Controllers\Inventario\ProductoController;
 use App\Http\Controllers\Inventario\TraspasoController;
 use App\Http\Controllers\NegocioActivoController;
+use App\Http\Controllers\NegocioSalarioController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Ventas\TurnoController;
+use App\Http\Controllers\Ventas\VentaController;
 use App\Services\AccessScheduler;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +50,9 @@ Route::middleware(['auth', 'verified'])->prefix('negocios')->name('negocios.')->
     Route::get('/{negocio}/editar', [NegocioController::class, 'edit'])->name('edit');
     Route::patch('/{negocio}', [NegocioController::class, 'update'])->name('update');
     Route::patch('/{negocio}/estado', [NegocioController::class, 'toggleEstado'])->name('toggle-estado');
+
+    Route::get('/{negocio}/salario', [NegocioSalarioController::class, 'edit'])->name('salario.edit');
+    Route::patch('/{negocio}/salario', [NegocioSalarioController::class, 'update'])->name('salario.update');
 });
 
 Route::patch('/negocio-activo/{negocio}', [NegocioActivoController::class, 'update'])
@@ -75,6 +81,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/traspasos/{traspaso}/autorizar', [TraspasoController::class, 'autorizar'])->name('traspasos.autorizar');
     Route::patch('/traspasos/{traspaso}/rechazar', [TraspasoController::class, 'rechazar'])->name('traspasos.rechazar');
     Route::patch('/traspasos/{traspaso}/confirmar', [TraspasoController::class, 'confirmar'])->name('traspasos.confirmar');
+
+    Route::get('/turnos', [TurnoController::class, 'index'])->name('turnos.index');
+    Route::get('/turnos/abrir', [TurnoController::class, 'create'])->name('turnos.create');
+    Route::post('/turnos', [TurnoController::class, 'store'])->name('turnos.store');
+    Route::get('/turnos/{turno}', [TurnoController::class, 'show'])->name('turnos.show');
+    Route::patch('/turnos/{turno}/cerrar', [TurnoController::class, 'cerrar'])->name('turnos.cerrar');
+
+    Route::get('/turnos/{turno}/ventas/crear', [VentaController::class, 'create'])->name('ventas.create');
+    Route::post('/turnos/{turno}/ventas', [VentaController::class, 'store'])->name('ventas.store');
 });
 
 Route::middleware(['auth', 'verified', 'super_admin'])->prefix('admin')->name('admin.')->group(function () {

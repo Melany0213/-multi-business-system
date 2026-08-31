@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\LogsActivity;
+use App\Services\AccessScheduler;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -25,16 +26,36 @@ class Business extends Model
         'logo_path',
         'color_primario',
         'color_secundario',
+        'salario_monto_fijo',
+        'salario_porcentaje',
+        'salario_base_porcentaje',
+        'admin_puede_configurar_salario',
     ];
 
     protected $casts = [
         'configuracion' => 'array',
+        'salario_monto_fijo' => 'decimal:2',
+        'salario_porcentaje' => 'decimal:2',
+        'admin_puede_configurar_salario' => 'boolean',
     ];
 
     protected $attributes = [
         'estado' => 'activo',
         'moneda' => 'USD',
         'zona_horaria' => 'UTC',
+        'salario_monto_fijo' => 0,
+        'salario_porcentaje' => 0,
+        'salario_base_porcentaje' => 'venta',
+        'admin_puede_configurar_salario' => false,
+    ];
+
+    /**
+     * Sobre qué puede aplicarse el porcentaje de salario — el dueño elige
+     * (ver Business::calcularSalario()).
+     */
+    public const BASES_PORCENTAJE_SALARIO = [
+        'venta' => 'Venta del turno',
+        'utilidad' => 'Utilidad del turno',
     ];
 
     public function account(): BelongsTo
@@ -69,9 +90,43 @@ class Business extends Model
             ->withTimestamps();
     }
 
+    public function turnos(): HasMany
+    {
+        return $this->hasMany(Turno::class);
+    }
+
     public function isActive(): bool
     {
         return $this->estado === 'activo';
+    }
+
+    /**
+     * Salario del cajero para un turno con estos totales, según lo que el
+     * dueño haya configurado para este negocio — monto fijo y porcentaje se
+     * pueden combinar (ej. "$5 fijos + 3% de la venta"); no hay una fórmula
+     * única del sistema (ver memoria del proyecto y [[referencia-zeta-pos]]).
+     */
+    public function calcularSalario(float $totalVenta, float $totalUtilidad): float
+    {
+        $base = $this->salario_base_porcentaje === 'utilidad' ? $totalUtilidad : $totalVenta;
+        $variable = $base * ((float) $this->salario_porcentaje / 100);
+
+        return round((float) $this->salario_monto_fijo + $variable, 2);
+    }
+
+    /**
+     * ¿Puede este usuario ajustar la configuración de salario del negocio?
+     * Siempre el dueño de la cuenta; el administrador solo si el dueño se lo
+     * delegó explícitamente (admin_puede_configurar_salario).
+     */
+    public function puedeConfigurarSalario(User $user, AccessScheduler $scheduler): bool
+    {
+        if ($user->is_super_admin_sistema || $this->account->owner_user_id === $user->id) {
+            return true;
+        }
+
+        return $this->admin_puede_configurar_salario
+            && $scheduler->hasPermission($user, $this, 'usuarios.gestionar');
     }
 
     protected function activityAccountId(): ?int

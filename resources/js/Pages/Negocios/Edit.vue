@@ -3,8 +3,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
     negocio: Object,
@@ -92,7 +93,11 @@ const submit = () => {
                             <InputError :message="form.errors.moneda" class="mt-2" />
                         </div>
 
-                        <div class="flex justify-end">
+                        <div class="flex items-center justify-between">
+                            <Link :href="route('negocios.salario.edit', negocio.id)">
+                                <SecondaryButton type="button">Configurar salario del cajero →</SecondaryButton>
+                            </Link>
+
                             <PrimaryButton :disabled="form.processing">
                                 Guardar
                             </PrimaryButton>

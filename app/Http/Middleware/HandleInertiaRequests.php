@@ -58,7 +58,11 @@ class HandleInertiaRequests extends Middleware
                 'esDueno' => Account::where('owner_user_id', $user->id)->exists(),
             ],
             'misNegocios' => $negocios->map(fn ($n) => ['id' => $n->id, 'nombre' => $n->nombre])->values(),
-            'negocioActivo' => $negocioActivo ? ['id' => $negocioActivo->id, 'nombre' => $negocioActivo->nombre] : null,
+            'negocioActivo' => $negocioActivo ? [
+                'id' => $negocioActivo->id,
+                'nombre' => $negocioActivo->nombre,
+                'puedeConfigurarSalario' => $negocioActivo->puedeConfigurarSalario($user, $this->scheduler),
+            ] : null,
         ];
     }
 }
