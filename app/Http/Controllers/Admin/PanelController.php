@@ -7,8 +7,10 @@ use App\Models\Account;
 use App\Models\ActivityLog;
 use App\Models\Business;
 use App\Models\Plan;
+use App\Models\Turno;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -50,7 +52,30 @@ class PanelController extends Controller
                 'ingreso_mensual_estimado' => (float) $ingresoMensualEstimado,
             ],
             'cuentasPorPlan' => $cuentasPorPlan,
+            'operacion' => [
+                'hoy' => $this->resumenOperacionDelDia(Carbon::today()),
+                'ayer' => $this->resumenOperacionDelDia(Carbon::yesterday()),
+            ],
         ]);
+    }
+
+    /**
+     * Ventas/utilidad/salario consolidados de TODOS los negocios de TODAS
+     * las cuentas para un día — los turnos se cuentan por su fecha de
+     * CIERRE, que es cuando esos totales quedan fijos (ver Turno::cerrar()).
+     * Las monedas de cada negocio no se convierten entre sí; es una suma
+     * simple, útil como pulso general más que como cifra contable exacta.
+     */
+    private function resumenOperacionDelDia(Carbon $dia): array
+    {
+        $turnos = Turno::where('estado', 'cerrado')->whereDate('fecha_cierre', $dia);
+
+        return [
+            'turnos_cerrados' => (clone $turnos)->count(),
+            'venta' => (float) (clone $turnos)->sum('total_venta'),
+            'utilidad' => (float) (clone $turnos)->sum('total_utilidad'),
+            'salario' => (float) (clone $turnos)->sum('salario'),
+        ];
     }
 
     public function negocios(): Response

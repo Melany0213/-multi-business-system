@@ -5,10 +5,20 @@ import { Head, Link } from '@inertiajs/vue3';
 const props = defineProps({
     metricas: Object,
     cuentasPorPlan: Array,
+    operacion: Object,
 });
 
 function formatearMoneda(valor) {
     return new Intl.NumberFormat('es', { style: 'currency', currency: 'USD' }).format(valor ?? 0);
+}
+
+function delta(hoy, ayer) {
+    return (hoy ?? 0) - (ayer ?? 0);
+}
+
+function claseDelta(valor) {
+    if (Math.abs(valor) < 0.01) return 'text-text-3';
+    return valor > 0 ? 'text-success' : 'text-danger';
 }
 </script>
 
@@ -52,6 +62,54 @@ function formatearMoneda(valor) {
                             de cada negocio llegarán con el módulo de Turnos y Ventas.
                         </p>
                     </div>
+                </div>
+            </div>
+
+            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div class="rounded-lg border border-border bg-surface p-6 shadow-sm">
+                    <div class="mb-4 flex items-baseline justify-between">
+                        <h3 class="font-medium text-text">Operación de la plataforma — hoy vs. ayer</h3>
+                        <span class="text-xs text-text-3">Todos los negocios, todas las cuentas</span>
+                    </div>
+
+                    <div v-if="operacion.hoy.turnos_cerrados === 0 && operacion.ayer.turnos_cerrados === 0" class="text-sm text-text-3">
+                        Todavía no se cerró ningún turno en la plataforma — estos números aparecen a medida
+                        que los negocios operan.
+                    </div>
+
+                    <div v-else class="grid gap-4 sm:grid-cols-4">
+                        <div>
+                            <p class="text-xs uppercase text-text-3">Turnos cerrados</p>
+                            <p class="mt-1 text-xl font-semibold text-text">{{ operacion.hoy.turnos_cerrados }}</p>
+                            <p class="text-xs text-text-3">Ayer: {{ operacion.ayer.turnos_cerrados }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase text-text-3">Venta</p>
+                            <p class="mt-1 text-xl font-semibold text-text">{{ formatearMoneda(operacion.hoy.venta) }}</p>
+                            <p class="text-xs" :class="claseDelta(delta(operacion.hoy.venta, operacion.ayer.venta))">
+                                {{ delta(operacion.hoy.venta, operacion.ayer.venta) >= 0 ? '+' : '' }}{{ formatearMoneda(delta(operacion.hoy.venta, operacion.ayer.venta)) }} vs. ayer
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase text-text-3">Utilidad</p>
+                            <p class="mt-1 text-xl font-semibold text-text">{{ formatearMoneda(operacion.hoy.utilidad) }}</p>
+                            <p class="text-xs" :class="claseDelta(delta(operacion.hoy.utilidad, operacion.ayer.utilidad))">
+                                {{ delta(operacion.hoy.utilidad, operacion.ayer.utilidad) >= 0 ? '+' : '' }}{{ formatearMoneda(delta(operacion.hoy.utilidad, operacion.ayer.utilidad)) }} vs. ayer
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase text-text-3">Salario</p>
+                            <p class="mt-1 text-xl font-semibold text-primary">{{ formatearMoneda(operacion.hoy.salario) }}</p>
+                            <p class="text-xs" :class="claseDelta(delta(operacion.hoy.salario, operacion.ayer.salario))">
+                                {{ delta(operacion.hoy.salario, operacion.ayer.salario) >= 0 ? '+' : '' }}{{ formatearMoneda(delta(operacion.hoy.salario, operacion.ayer.salario)) }} vs. ayer
+                            </p>
+                        </div>
+                    </div>
+
+                    <p class="mt-4 text-xs text-text-3">
+                        Se cuenta por fecha de cierre de turno. Las monedas de cada negocio se suman sin
+                        convertir entre sí — sirve como pulso general, no como cifra contable exacta.
+                    </p>
                 </div>
             </div>
 

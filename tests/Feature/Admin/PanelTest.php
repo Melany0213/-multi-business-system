@@ -3,8 +3,10 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Account;
+use App\Models\Almacen;
 use App\Models\Business;
 use App\Models\Plan;
+use App\Models\Turno;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -47,6 +49,50 @@ class PanelTest extends TestCase
             ->where('metricas.total_negocios', 1)
             ->where('metricas.ingreso_mensual_estimado', 10)
         );
+    }
+
+    public function test_el_panel_general_suma_venta_utilidad_y_salario_de_turnos_cerrados_hoy(): void
+    {
+        $superAdmin = User::factory()->create(['is_super_admin_sistema' => true]);
+        $dueno = User::factory()->create();
+        $cuenta = Account::create(['owner_user_id' => $dueno->id, 'nombre_cliente' => 'Cuenta Z']);
+        $negocio = Business::create(['account_id' => $cuenta->id, 'nombre' => 'Negocio Z', 'tipo' => 'productos']);
+        $almacen = Almacen::create(['business_id' => $negocio->id, 'nombre' => 'Almacén Z']);
+        $cajero = User::factory()->create();
+
+        Turno::create([
+            'business_id' => $negocio->id,
+            'almacen_id' => $almacen->id,
+            'cajero_id' => $cajero->id,
+            'dispositivo' => 'Caja 1',
+            'estado' => 'cerrado',
+            'fecha_apertura' => now(),
+            'fecha_cierre' => now(),
+            'total_venta' => 100,
+            'total_utilidad' => 40,
+            'salario' => 10,
+        ]);
+
+        // Un turno abierto (sin cerrar) no debe contarse.
+        Turno::create([
+            'business_id' => $negocio->id,
+            'almacen_id' => $almacen->id,
+            'cajero_id' => $cajero->id,
+            'dispositivo' => 'Caja 2',
+            'estado' => 'abierto',
+            'fecha_apertura' => now(),
+            'total_venta' => 999,
+        ]);
+
+        $this->actingAs($superAdmin)
+            ->get(route('admin.panel'))
+            ->assertInertia(fn ($page) => $page
+                ->where('operacion.hoy.turnos_cerrados', 1)
+                ->where('operacion.hoy.venta', 100)
+                ->where('operacion.hoy.utilidad', 40)
+                ->where('operacion.hoy.salario', 10)
+                ->where('operacion.ayer.turnos_cerrados', 0)
+            );
     }
 
     public function test_el_super_admin_ve_todos_los_negocios_de_todas_las_cuentas(): void

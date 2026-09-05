@@ -59,6 +59,39 @@ function formatearFecha(fecha) {
 const totalVentaEnVivo = computed(() =>
     props.turno.ventas.filter((v) => v.estado === 'pagado').reduce((s, v) => s + Number(v.monto_total), 0),
 );
+
+// Reconciliación: lo contado en el conteo de efectivo (billetes físicos) solo
+// debería cuadrar contra las ventas en EFECTIVO de este turno — las de
+// tarjeta/transferencia no pasan por la caja física.
+const esperadoEnCaja = computed(() =>
+    props.turno.ventas
+        .filter((v) => v.estado === 'pagado' && v.metodo_pago === 'efectivo')
+        .reduce((s, v) => s + Number(v.monto_total), 0),
+);
+
+const diferenciaCaja = computed(() => Number(props.turno.total_contado ?? 0) - esperadoEnCaja.value);
+
+const mensajeReconciliacion = computed(() => {
+    if (Math.abs(diferenciaCaja.value) < 0.01) {
+        return `Cuadra con lo esperado (${formatearMoneda(esperadoEnCaja.value)} en efectivo).`;
+    }
+
+    const cantidad = formatearMoneda(Math.abs(diferenciaCaja.value));
+
+    return diferenciaCaja.value > 0
+        ? `Sobran ${cantidad} respecto a lo esperado en efectivo.`
+        : `Faltan ${cantidad} respecto a lo esperado en efectivo.`;
+});
+
+const claseReconciliacion = computed(() => {
+    if (Math.abs(diferenciaCaja.value) < 0.01) {
+        return { caja: 'bg-surface', texto: 'text-success' };
+    }
+
+    return diferenciaCaja.value > 0
+        ? { caja: 'bg-warning-soft', texto: 'text-warning' }
+        : { caja: 'bg-danger-soft', texto: 'text-danger' };
+});
 </script>
 
 <template>
@@ -108,9 +141,12 @@ const totalVentaEnVivo = computed(() =>
                         <p class="text-xs uppercase text-text-3">Utilidad</p>
                         <p class="mt-1 text-xl font-semibold text-text">{{ formatearMoneda(turno.total_utilidad) }}</p>
                     </div>
-                    <div class="rounded-lg border border-border bg-surface p-5">
+                    <div class="rounded-lg border border-border p-5" :class="claseReconciliacion.caja">
                         <p class="text-xs uppercase text-text-3">Contado al cierre</p>
                         <p class="mt-1 text-xl font-semibold text-text">{{ formatearMoneda(turno.total_contado) }}</p>
+                        <p class="mt-1 text-xs font-medium" :class="claseReconciliacion.texto">
+                            {{ mensajeReconciliacion }}
+                        </p>
                     </div>
                     <div class="rounded-lg border border-border bg-surface p-5">
                         <p class="text-xs uppercase text-text-3">Depósito</p>
