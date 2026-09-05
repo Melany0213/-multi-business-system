@@ -99,6 +99,21 @@ class VentaController extends Controller
         return redirect()->route('turnos.show', $venta->turno_id);
     }
 
+    public function anular(Request $request, Venta $venta): RedirectResponse
+    {
+        $turno = $venta->turno;
+
+        $tienePermiso = app(AccessScheduler::class)->hasPermission($request->user(), $turno->business, 'ventas.anular');
+        abort_unless($tienePermiso, 403);
+
+        abort_unless($turno->isAbierto(), 422, 'Solo se puede anular una venta de un turno todavía abierto.');
+        abort_unless($venta->estado === 'pagado', 422, 'Esta venta ya está anulada.');
+
+        DB::transaction(fn () => $venta->anular());
+
+        return back();
+    }
+
     private function autorizarVenta(Request $request, Turno $turno): void
     {
         abort_unless($turno->isAbierto(), 422, 'Este turno ya está cerrado.');

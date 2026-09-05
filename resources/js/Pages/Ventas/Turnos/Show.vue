@@ -5,13 +5,22 @@ import Modal from '@/Components/Modal.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 
 const props = defineProps({
     turno: Object,
     esPropio: Boolean,
     puedeVender: Boolean,
+    puedeAnular: Boolean,
 });
+
+function anularVenta(venta) {
+    if (! confirm('¿Anular esta venta? Se repone el stock vendido en el almacén del turno.')) {
+        return;
+    }
+
+    router.patch(route('ventas.anular', venta.id), {}, { preserveScroll: true });
+}
 
 const DENOMINACIONES = [5000, 2000, 1000, 500, 200, 100, 50, 20, 10, 5];
 
@@ -177,6 +186,7 @@ const claseReconciliacion = computed(() => {
                                 <th class="px-6 py-3">Método</th>
                                 <th class="px-6 py-3">Estado</th>
                                 <th class="px-6 py-3 text-right">Total</th>
+                                <th class="px-6 py-3"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -197,9 +207,18 @@ const claseReconciliacion = computed(() => {
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-right font-mono">{{ formatearMoneda(venta.monto_total) }}</td>
+                                <td class="px-6 py-4 text-right">
+                                    <button
+                                        v-if="puedeAnular && venta.estado === 'pagado' && turno.estado === 'abierto'"
+                                        @click="anularVenta(venta)"
+                                        class="text-sm font-medium text-danger hover:underline"
+                                    >
+                                        Anular
+                                    </button>
+                                </td>
                             </tr>
                             <tr v-if="turno.ventas.length === 0">
-                                <td colspan="5" class="px-6 py-8 text-center text-text-3">
+                                <td colspan="6" class="px-6 py-8 text-center text-text-3">
                                     Todavía no hay ventas registradas en este turno.
                                 </td>
                             </tr>

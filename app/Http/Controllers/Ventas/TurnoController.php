@@ -101,6 +101,7 @@ class TurnoController extends Controller
             'turno' => $turno,
             'esPropio' => $turno->cajero_id === $request->user()->id,
             'puedeVender' => app(AccessScheduler::class)->hasPermission($request->user(), $negocio, 'ventas.crear'),
+            'puedeAnular' => app(AccessScheduler::class)->hasPermission($request->user(), $negocio, 'ventas.anular'),
         ]);
     }
 

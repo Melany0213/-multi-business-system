@@ -47,6 +47,32 @@ class Venta extends Model
         return $this->hasMany(VentaDetalle::class);
     }
 
+    public function isAnulable(): bool
+    {
+        return $this->estado === 'pagado' && $this->turno->isAbierto();
+    }
+
+    /**
+     * Anula la venta y repone el stock vendido en el almacén del turno. Solo
+     * tiene sentido mientras el turno sigue abierto — una vez cerrado, sus
+     * totales (venta/utilidad/salario) ya quedaron fijos en Turno::cerrar()
+     * y no se recalculan retroactivamente.
+     */
+    public function anular(): void
+    {
+        $almacen = $this->turno->almacen;
+
+        $this->detalles->each(function (VentaDetalle $detalle) use ($almacen) {
+            $pivot = $almacen->productos()->where('producto_id', $detalle->producto_id)->first()?->pivot;
+
+            $almacen->productos()->syncWithoutDetaching([
+                $detalle->producto_id => ['cantidad' => ($pivot->cantidad ?? 0) + $detalle->cantidad],
+            ]);
+        });
+
+        $this->update(['estado' => 'anulado']);
+    }
+
     protected function activityAccountId(): ?int
     {
         return $this->turno?->business?->account_id;

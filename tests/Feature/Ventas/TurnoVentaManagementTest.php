@@ -259,4 +259,79 @@ class TurnoVentaManagementTest extends TestCase
 
         $this->assertSame('cerrado', $turno->fresh()->estado);
     }
+
+    public function test_un_dependiente_no_puede_anular_una_venta(): void
+    {
+        $cajero = User::factory()->create();
+        $turno = $this->abrirTurno($cajero);
+
+        $this->actingAs($cajero)->post(route('ventas.store', $turno), [
+            'metodo_pago' => 'efectivo',
+            'items' => [['producto_id' => $this->producto->id, 'cantidad' => 3]],
+        ]);
+        $venta = $turno->ventas()->firstOrFail();
+
+        $this->actingAs($cajero)->patch(route('ventas.anular', $venta))->assertForbidden();
+        $this->assertSame('pagado', $venta->fresh()->estado);
+    }
+
+    public function test_un_administrador_puede_anular_una_venta_y_repone_el_stock(): void
+    {
+        $cajero = User::factory()->create();
+        $turno = $this->abrirTurno($cajero);
+
+        $this->actingAs($cajero)->post(route('ventas.store', $turno), [
+            'metodo_pago' => 'efectivo',
+            'items' => [['producto_id' => $this->producto->id, 'cantidad' => 3]],
+        ]);
+        $venta = $turno->ventas()->firstOrFail();
+
+        $admin = User::factory()->create();
+        $this->darAcceso($admin, 'administrador');
+
+        $this->actingAs($admin)->patch(route('ventas.anular', $venta))->assertRedirect();
+
+        $this->assertSame('anulado', $venta->fresh()->estado);
+        $this->assertSame(20, $this->almacen->productos()->first()->pivot->cantidad);
+    }
+
+    public function test_no_se_puede_anular_una_venta_de_un_turno_ya_cerrado(): void
+    {
+        $cajero = User::factory()->create();
+        $turno = $this->abrirTurno($cajero);
+
+        $this->actingAs($cajero)->post(route('ventas.store', $turno), [
+            'metodo_pago' => 'efectivo',
+            'items' => [['producto_id' => $this->producto->id, 'cantidad' => 3]],
+        ]);
+        $venta = $turno->ventas()->firstOrFail();
+
+        $this->actingAs($cajero)->patch(route('turnos.cerrar', $turno), []);
+
+        $admin = User::factory()->create();
+        $this->darAcceso($admin, 'administrador');
+
+        $this->actingAs($admin)->patch(route('ventas.anular', $venta))->assertStatus(422);
+        $this->assertSame('pagado', $venta->fresh()->estado);
+    }
+
+    public function test_no_se_puede_anular_dos_veces_la_misma_venta(): void
+    {
+        $cajero = User::factory()->create();
+        $turno = $this->abrirTurno($cajero);
+
+        $this->actingAs($cajero)->post(route('ventas.store', $turno), [
+            'metodo_pago' => 'efectivo',
+            'items' => [['producto_id' => $this->producto->id, 'cantidad' => 3]],
+        ]);
+        $venta = $turno->ventas()->firstOrFail();
+
+        $admin = User::factory()->create();
+        $this->darAcceso($admin, 'administrador');
+
+        $this->actingAs($admin)->patch(route('ventas.anular', $venta))->assertRedirect();
+        $this->actingAs($admin)->patch(route('ventas.anular', $venta))->assertStatus(422);
+
+        $this->assertSame(20, $this->almacen->productos()->first()->pivot->cantidad);
+    }
 }

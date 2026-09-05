@@ -90,6 +90,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/turnos/{turno}/ventas/crear', [VentaController::class, 'create'])->name('ventas.create');
     Route::post('/turnos/{turno}/ventas', [VentaController::class, 'store'])->name('ventas.store');
+    Route::patch('/ventas/{venta}/anular', [VentaController::class, 'anular'])->name('ventas.anular');
 });
 
 Route::middleware(['auth', 'verified', 'super_admin'])->prefix('admin')->name('admin.')->group(function () {
