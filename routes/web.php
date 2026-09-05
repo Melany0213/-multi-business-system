@@ -9,6 +9,7 @@ use App\Http\Controllers\Inventario\TraspasoController;
 use App\Http\Controllers\NegocioActivoController;
 use App\Http\Controllers\NegocioSalarioController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Ventas\ReporteController;
 use App\Http\Controllers\Ventas\TurnoController;
 use App\Http\Controllers\Ventas\VentaController;
 use App\Services\AccessScheduler;
@@ -91,6 +92,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/turnos/{turno}/ventas/crear', [VentaController::class, 'create'])->name('ventas.create');
     Route::post('/turnos/{turno}/ventas', [VentaController::class, 'store'])->name('ventas.store');
     Route::patch('/ventas/{venta}/anular', [VentaController::class, 'anular'])->name('ventas.anular');
+
+    Route::get('/reportes/ventas', [ReporteController::class, 'index'])->name('reportes.ventas');
 });
 
 Route::middleware(['auth', 'verified', 'super_admin'])->prefix('admin')->name('admin.')->group(function () {

@@ -62,6 +62,7 @@ class HandleInertiaRequests extends Middleware
                 'id' => $negocioActivo->id,
                 'nombre' => $negocioActivo->nombre,
                 'puedeConfigurarSalario' => $negocioActivo->puedeConfigurarSalario($user, $this->scheduler),
+                'puedeVerReportes' => $this->scheduler->hasPermission($user, $negocioActivo, 'reportes.ver'),
             ] : null,
         ];
     }
