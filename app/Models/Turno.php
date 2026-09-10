@@ -128,8 +128,56 @@ class Turno extends Model
         return $this->business_id;
     }
 
+    /**
+     * Lo que deberia haber en la caja fisica al cerrar: solo las ventas en
+     * EFECTIVO: las de tarjeta y transferencia no pasan por el cajon.
+     */
+    public function esperadoEnCaja(): float
+    {
+        return (float) $this->ventas()
+            ->where('estado', 'pagado')
+            ->where('metodo_pago', 'efectivo')
+            ->sum('monto_total');
+    }
+
+    /**
+     * Positivo si sobra dinero, negativo si falta. Es el numero por el que
+     * empieza cualquier revision de un turno, y por eso viaja en el propio
+     * texto del movimiento y no escondido en los cambios.
+     */
+    public function descuadre(): float
+    {
+        return round((float) $this->total_contado - $this->esperadoEnCaja(), 2);
+    }
+
+    protected function activityEvento(string $action): string
+    {
+        return match (true) {
+            $action === 'created' => 'turno.abierto',
+            $action === 'updated' && $this->wasChanged('estado') && $this->estado === 'cerrado' => 'turno.cerrado',
+            default => 'turno.'.$this->activityParticipio($action),
+        };
+    }
+
     protected function activityDescription(string $action): string
     {
+        $evento = $this->activityEvento($action);
+
+        if ($evento === 'turno.abierto') {
+            return "Turno #{$this->getKey()} abierto en \"{$this->almacen?->nombre}\" desde {$this->dispositivo}";
+        }
+
+        if ($evento === 'turno.cerrado') {
+            $descuadre = $this->descuadre();
+
+            $cuadre = abs($descuadre) < 0.01
+                ? 'caja cuadrada'
+                : ($descuadre > 0 ? 'sobran '.number_format($descuadre, 2) : 'faltan '.number_format(abs($descuadre), 2));
+
+            return "Turno #{$this->getKey()} cerrado - venta ".number_format((float) $this->total_venta, 2)
+                .', salario '.number_format((float) $this->salario, 2)." ({$cuadre})";
+        }
+
         return "Turno #{$this->getKey()} ({$this->dispositivo}) ".$this->activityVerbo($action);
     }
 }

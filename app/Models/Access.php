@@ -65,8 +65,23 @@ class Access extends Model
         return $this->business_id;
     }
 
+    protected function activityEvento(string $action): string
+    {
+        return match ($action) {
+            'created' => 'acceso.otorgado',
+            'deleted' => 'acceso.revocado',
+            default => 'acceso.'.$this->activityParticipio($action),
+        };
+    }
+
     protected function activityDescription(string $action): string
     {
-        return "Acceso de \"{$this->user?->name}\" a \"{$this->business?->nombre}\" ".$this->activityVerbo($action);
+        $quien = "\"{$this->user?->name}\" en \"{$this->business?->nombre}\"";
+
+        return match ($this->activityEvento($action)) {
+            'acceso.otorgado' => "Acceso otorgado a {$quien} con rol \"{$this->role?->name}\"",
+            'acceso.revocado' => "Acceso revocado a {$quien}",
+            default => "Acceso de {$quien} ".$this->activityVerbo($action),
+        };
     }
 }

@@ -156,8 +156,38 @@ class Traspaso extends Model
         return $this->almacenOrigen?->business_id;
     }
 
+    protected function activityEvento(string $action): string
+    {
+        if ($action === 'created') {
+            return 'traspaso.solicitado';
+        }
+
+        if ($action === 'updated' && $this->wasChanged('estado')) {
+            return match ($this->estado) {
+                'autorizado' => 'traspaso.autorizado',
+                'rechazado' => 'traspaso.rechazado',
+                'completado' => 'traspaso.confirmado',
+                default => 'traspaso.'.$this->estado,
+            };
+        }
+
+        return 'traspaso.'.$this->activityParticipio($action);
+    }
+
     protected function activityDescription(string $action): string
     {
-        return "Traspaso #{$this->getKey()} ({$this->estado}) ".$this->activityVerbo($action);
+        $que = "{$this->cantidad} x \"{$this->producto?->nombre}\"";
+        $ruta = "\"{$this->almacenOrigen?->nombre}\" -> \"{$this->almacenDestino?->nombre}\"";
+
+        return match ($this->activityEvento($action)) {
+            // El stock se mueve en dos momentos distintos (RF-24) y por eso
+            // cada paso se nombra por separado: sin esto, un traspaso a medio
+            // camino era indistinguible de uno completo en el libro.
+            'traspaso.solicitado' => "Traspaso #{$this->getKey()} solicitado: {$que}, {$ruta}",
+            'traspaso.autorizado' => "Traspaso #{$this->getKey()} AUTORIZADO: salieron {$que} de \"{$this->almacenOrigen?->nombre}\"",
+            'traspaso.rechazado' => "Traspaso #{$this->getKey()} rechazado: {$que}, {$ruta}",
+            'traspaso.confirmado' => "Traspaso #{$this->getKey()} CONFIRMADO: entraron {$que} en \"{$this->almacenDestino?->nombre}\"",
+            default => "Traspaso #{$this->getKey()} ({$this->estado}) ".$this->activityVerbo($action),
+        };
     }
 }

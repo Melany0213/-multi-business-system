@@ -8,6 +8,7 @@ use App\Models\Almacen;
 use App\Models\Business;
 use App\Models\Producto;
 use App\Services\AccessScheduler;
+use App\Services\Bitacora;
 use App\Services\NegocioActivoResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ use Inertia\Response;
 class ProductoController extends Controller
 {
     use RequiereNegocioActivo;
+
+    public function __construct(private Bitacora $bitacora) {}
 
     public function index(Request $request, NegocioActivoResolver $resolver, AccessScheduler $scheduler): Response
     {
@@ -97,6 +100,16 @@ class ProductoController extends Controller
             $producto->id => ['precio' => $data['precio'], 'costo' => $data['costo']],
         ]);
 
+        // El precio y el costo viven en la tabla pivote business_producto, que
+        // Eloquent no observa: sin este registro explicito el alta quedaba
+        // fuera del libro de movimientos (RF-49).
+        $this->bitacora->registrar(
+            'producto.ofrecido',
+            "Producto \"{$producto->nombre}\" incorporado al negocio a "
+                .number_format((float) $data['precio'], 2).' (costo '.number_format((float) $data['costo'], 2).')',
+            ['negocio' => $negocio, 'sujeto' => $producto, 'action' => 'created'],
+        );
+
         return redirect()->route('productos.index');
     }
 
@@ -143,7 +156,21 @@ class ProductoController extends Controller
         }
 
         $producto->update($atributos);
+
+        // Tocar el costo cambia la utilidad del turno y, con ella, el salario
+        // del cajero: es de los datos mas sensibles del sistema y hasta ahora
+        // cambiaba sin dejar rastro alguno (RF-49).
+        $antes = $this->pivotOrFail($negocio, $producto);
+
         $negocio->productos()->updateExistingPivot($producto->id, ['precio' => $data['precio'], 'costo' => $data['costo']]);
+
+        $this->bitacora->registrarCambioDeValores(
+            'precio.cambiado',
+            "Precio o costo de \"{$producto->nombre}\" modificado en este negocio",
+            ['precio' => $antes->precio, 'costo' => $antes->costo],
+            ['precio' => $data['precio'], 'costo' => $data['costo']],
+            ['negocio' => $negocio, 'sujeto' => $producto],
+        );
 
         return redirect()->route('productos.index');
     }
@@ -154,9 +181,17 @@ class ProductoController extends Controller
         $this->autorizarPermiso($request, $negocio, 'inventario.editar');
         $pivot = $this->pivotOrFail($negocio, $producto);
 
-        $negocio->productos()->updateExistingPivot($producto->id, [
-            'estado' => $pivot->estado === 'activo' ? 'inactivo' : 'activo',
-        ]);
+        $nuevoEstado = $pivot->estado === 'activo' ? 'inactivo' : 'activo';
+
+        $negocio->productos()->updateExistingPivot($producto->id, ['estado' => $nuevoEstado]);
+
+        $this->bitacora->registrarCambioDeValores(
+            'producto.estado_cambiado',
+            "Producto \"{$producto->nombre}\" pasa a {$nuevoEstado} en este negocio",
+            ['estado' => $pivot->estado],
+            ['estado' => $nuevoEstado],
+            ['negocio' => $negocio, 'sujeto' => $producto],
+        );
 
         return back();
     }
@@ -172,7 +207,23 @@ class ProductoController extends Controller
             'cantidad' => ['required', 'integer', 'min:0'],
         ]);
 
+        $cantidadAnterior = $producto->almacenes()
+            ->where('almacenes.id', $almacen->id)
+            ->first()?->pivot?->cantidad;
+
         $producto->almacenes()->syncWithoutDetaching([$almacen->id => ['cantidad' => $data['cantidad']]]);
+
+        // El ajuste manual de stock es el movimiento mas sensible a fraude de
+        // todo un POS, y viajaba por una tabla pivote sin dejar ninguna traza
+        // (RF-49). Queda registrado con el valor anterior y el nuevo, que es
+        // lo unico que permite despues revisar si el ajuste tenia sentido.
+        $this->bitacora->registrarCambioDeValores(
+            'stock.ajustado',
+            "Stock de \"{$producto->nombre}\" ajustado a mano en \"{$almacen->nombre}\"",
+            ['cantidad' => $cantidadAnterior],
+            ['cantidad' => $data['cantidad']],
+            ['negocio' => $negocio, 'sujeto' => $producto],
+        );
 
         return back();
     }

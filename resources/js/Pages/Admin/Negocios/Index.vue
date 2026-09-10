@@ -34,7 +34,14 @@ defineProps({
                         </thead>
                         <tbody>
                             <tr v-for="negocio in negocios" :key="negocio.id" class="border-b border-border">
-                                <td class="px-6 py-4 font-medium">{{ negocio.nombre }}</td>
+                                <td class="px-6 py-4 font-medium">
+                                    <Link
+                                        :href="route('admin.expedientes.negocio', negocio.id)"
+                                        class="text-primary hover:underline"
+                                    >
+                                        {{ negocio.nombre }}
+                                    </Link>
+                                </td>
                                 <td class="px-6 py-4">
                                     <Link
                                         :href="route('admin.cuentas.show', negocio.account_id)"

@@ -1,11 +1,16 @@
 <?php
 
 use App\Http\Controllers\Admin\AccountController;
+use App\Http\Controllers\Admin\ExpedienteController;
+use App\Http\Controllers\Admin\IntervencionController;
 use App\Http\Controllers\Admin\PanelController;
+use App\Http\Controllers\Admin\SolicitudSoporteController;
 use App\Http\Controllers\Dueno\NegocioController;
 use App\Http\Controllers\Inventario\AlmacenController;
 use App\Http\Controllers\Inventario\ProductoController;
 use App\Http\Controllers\Inventario\TraspasoController;
+use App\Http\Controllers\Negocio\LibroController;
+use App\Http\Controllers\Negocio\SolicitudController;
 use App\Http\Controllers\NegocioActivoController;
 use App\Http\Controllers\NegocioSalarioController;
 use App\Http\Controllers\ProfileController;
@@ -94,6 +99,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/ventas/{venta}/anular', [VentaController::class, 'anular'])->name('ventas.anular');
 
     Route::get('/reportes/ventas', [ReporteController::class, 'index'])->name('reportes.ventas');
+
+    // El dueno ve su propio libro de movimientos y todas las veces que el
+    // soporte entro a su negocio (RF-61), y puede pedir una revision (RF-58).
+    Route::get('/libro', [LibroController::class, 'index'])->name('negocio.libro');
+
+    Route::get('/soporte/solicitudes', [SolicitudController::class, 'index'])->name('negocio.solicitudes.index');
+    Route::post('/soporte/solicitudes', [SolicitudController::class, 'store'])->name('negocio.solicitudes.store');
+    Route::patch('/soporte/solicitudes/{solicitud}/conformidad', [SolicitudController::class, 'conformidad'])
+        ->name('negocio.solicitudes.conformidad');
 });
 
 Route::middleware(['auth', 'verified', 'super_admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -110,6 +124,25 @@ Route::middleware(['auth', 'verified', 'super_admin'])->prefix('admin')->name('a
     Route::get('/cuentas/{account}', [AccountController::class, 'show'])->name('cuentas.show');
     Route::patch('/cuentas/{account}', [AccountController::class, 'update'])->name('cuentas.update');
     Route::delete('/cuentas/{account}', [AccountController::class, 'destroy'])->name('cuentas.destroy');
+
+    // Expedientes de SOLO LECTURA (RF-51 y RF-52): el Super Admin ve todo el
+    // flujo del negocio sin un solo control de edicion. Mirar no cambia nada
+    // y por eso no pide ceremonia.
+    Route::get('/expedientes/negocios/{negocio}', [ExpedienteController::class, 'negocio'])->name('expedientes.negocio');
+    Route::get('/expedientes/usuarios/{usuario}', [ExpedienteController::class, 'usuario'])->name('expedientes.usuario');
+
+    // Intervenciones (RF-54): la unica forma de ESCRIBIR en un negocio ajeno.
+    Route::get('/intervenciones', [IntervencionController::class, 'index'])->name('intervenciones.index');
+    Route::get('/negocios/{negocio}/intervenir', [IntervencionController::class, 'create'])->name('intervenciones.create');
+    Route::post('/negocios/{negocio}/intervenir', [IntervencionController::class, 'store'])->name('intervenciones.store');
+    Route::get('/intervenciones/{intervencion}', [IntervencionController::class, 'show'])->name('intervenciones.show');
+    Route::patch('/intervenciones/{intervencion}/cerrar', [IntervencionController::class, 'cerrar'])->name('intervenciones.cerrar');
+
+    // Bandeja de solicitudes de los duenos (RF-58).
+    Route::get('/solicitudes', [SolicitudSoporteController::class, 'index'])->name('solicitudes.index');
+    Route::patch('/solicitudes/{solicitud}/tomar', [SolicitudSoporteController::class, 'tomar'])->name('solicitudes.tomar');
+    Route::patch('/solicitudes/{solicitud}/resolver', [SolicitudSoporteController::class, 'resolver'])->name('solicitudes.resolver');
+    Route::patch('/solicitudes/{solicitud}/rechazar', [SolicitudSoporteController::class, 'rechazar'])->name('solicitudes.rechazar');
 });
 
 require __DIR__.'/auth.php';

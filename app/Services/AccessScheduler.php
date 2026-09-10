@@ -46,10 +46,18 @@ class AccessScheduler
      */
     public function businessesActiveFor(User $user, ?CarbonInterface $at = null): Collection
     {
-        return $this->activeAccessesFor($user, $at)
-            ->map(fn (Access $access) => $access->business)
-            ->unique('id')
-            ->values();
+        $negocios = $this->activeAccessesFor($user, $at)
+            ->map(fn (Access $access) => $access->business);
+
+        // Mientras dura una intervencion de soporte, el negocio intervenido
+        // aparece como operable para el Super Admin del Sistema: es lo que
+        // permite que las pantallas reales del dueno funcionen bajo su sesion
+        // sin construir una segunda interfaz de escritura (RF-54).
+        $negocios = $negocios->merge(
+            app(Intervenciones::class)->negociosIntervenidosPor($user, $at)
+        );
+
+        return $negocios->unique('id')->values();
     }
 
     /**
@@ -58,9 +66,39 @@ class AccessScheduler
      */
     public function hasPermission(User $user, Business $business, string $permission, ?CarbonInterface $at = null): bool
     {
+        if ($user->is_super_admin_sistema) {
+            return $this->superAdminPuede($user, $business, $permission, $at);
+        }
+
         return $this->activeAccessesFor($user, $at)
             ->where('business_id', $business->id)
             ->contains(fn (Access $access) => $access->role->hasPermissionTo($permission));
+    }
+
+    /**
+     * El Super Admin del Sistema no tiene Accesos: su alcance lo decide esta
+     * regla, no una fila en `accesses`.
+     *
+     * Mirar es libre - es el 90% del soporte, y una ceremonia rutinaria deja
+     * de funcionar como control. Tocar exige una intervencion vigente sobre
+     * ESE negocio (RF-51 y RF-54).
+     */
+    protected function superAdminPuede(User $user, Business $business, string $permission, ?CarbonInterface $at): bool
+    {
+        if (static::esPermisoDeLectura($permission)) {
+            return true;
+        }
+
+        return app(Intervenciones::class)->vigentePara($user, $business->id, $at) !== null;
+    }
+
+    /**
+     * Por convencion del catalogo de permisos (ver PermissionSeeder), los que
+     * terminan en `.ver` solo consultan; el resto modifica algo.
+     */
+    public static function esPermisoDeLectura(string $permission): bool
+    {
+        return str_ends_with($permission, '.ver');
     }
 
     protected function businessUsable(Business $business): bool

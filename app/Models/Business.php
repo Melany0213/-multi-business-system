@@ -121,7 +121,15 @@ class Business extends Model
      */
     public function puedeConfigurarSalario(User $user, AccessScheduler $scheduler): bool
     {
-        if ($user->is_super_admin_sistema || $this->account->owner_user_id === $user->id) {
+        // Para el Super Admin del Sistema esto no es una excepción: tocar el
+        // salario es escribir, así que pasa por la misma regla que todo lo
+        // demás y exige una intervención vigente (RF-54). Antes entraba
+        // siempre, y era justo el ajuste que más cambia el bolsillo ajeno.
+        if ($user->is_super_admin_sistema) {
+            return $scheduler->hasPermission($user, $this, 'negocio.configurar');
+        }
+
+        if ($this->account->owner_user_id === $user->id) {
             return true;
         }
 

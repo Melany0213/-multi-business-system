@@ -2,19 +2,23 @@
 
 namespace App\Models\Concerns;
 
-use App\Models\ActivityLog;
+use App\Services\Bitacora;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 /**
- * Deja una traza en `activity_logs` cada vez que el modelo se crea, actualiza
- * o elimina — para que el Super Admin del Sistema tenga un registro de los
- * movimientos realizados por cada usuario (ver [[referencia-zeta-pos]]:
- * necesita ver "todo del sistema", incluida esta bitácora).
+ * Deja una entrada en el LIBRO DE MOVIMIENTOS cada vez que el modelo se crea,
+ * actualiza o elimina.
  *
- * Cada modelo que use este trait puede sobreescribir `activityAccountId()`,
- * `activityBusinessId()` y `activityDescription()` para dar contexto; sin
- * eso, la traza igual se registra, solo que sin cuenta/negocio asociados.
+ * Este rastro automático es la RED DE SEGURIDAD del libro: atrapa hasta lo
+ * que nadie se acordó de nombrar. Encima de él, cada modelo puede darle a sus
+ * movimientos un nombre propio sobreescribiendo `activityEvento()` — la
+ * diferencia entre "Turno #14 actualizado", que obliga a abrir el módulo, y
+ * "Turno #14 cerrado", que se entiende leyéndolo (RF-48).
+ *
+ * Lo que NO pasa por un modelo Eloquent (los cambios sobre tablas pivote:
+ * stock por almacén, precio y costo por negocio) no llega acá y hay que
+ * registrarlo a mano con `Bitacora::registrar()` — ver RF-49.
  */
 trait LogsActivity
 {
@@ -44,16 +48,28 @@ trait LogsActivity
             }
         }
 
-        ActivityLog::create([
-            'causer_id' => Auth::id(),
-            'account_id' => $accountId,
-            'business_id' => $businessId,
-            'subject_type' => static::class,
-            'subject_id' => $this->getKey(),
-            'action' => $action,
-            'description' => $this->activityDescription($action),
-            'changes' => $action === 'updated' ? $this->activityChanges() : null,
-        ]);
+        app(Bitacora::class)->registrar(
+            $this->activityEvento($action),
+            $this->activityDescription($action),
+            [
+                'account_id' => $accountId,
+                'business_id' => $businessId,
+                'sujeto' => $this,
+                'action' => $action,
+                'cambios' => $action === 'updated' ? $this->activityChanges() : null,
+            ],
+        );
+    }
+
+    /**
+     * Nombre del movimiento. Por defecto, "<modelo>.<participio>"
+     * (producto.creado, almacen.eliminado); los modelos cuyos cambios de
+     * estado significan algo para el negocio lo sobreescriben para nombrar
+     * el hecho real: turno.abierto, traspaso.autorizado, venta.anulada.
+     */
+    protected function activityEvento(string $action): string
+    {
+        return Str::snake(class_basename($this)).'.'.$this->activityParticipio($action);
     }
 
     /**
@@ -99,6 +115,16 @@ trait LogsActivity
             'created' => 'creó',
             'updated' => 'actualizó',
             'deleted' => 'eliminó',
+            default => $action,
+        };
+    }
+
+    protected function activityParticipio(string $action): string
+    {
+        return match ($action) {
+            'created' => 'creado',
+            'updated' => 'actualizado',
+            'deleted' => 'eliminado',
             default => $action,
         };
     }

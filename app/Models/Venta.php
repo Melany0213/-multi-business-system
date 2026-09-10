@@ -83,8 +83,23 @@ class Venta extends Model
         return $this->turno?->business_id;
     }
 
+    protected function activityEvento(string $action): string
+    {
+        return match (true) {
+            $action === 'created' => 'venta.registrada',
+            $action === 'updated' && $this->wasChanged('estado') && $this->estado === 'anulado' => 'venta.anulada',
+            default => 'venta.'.$this->activityParticipio($action),
+        };
+    }
+
     protected function activityDescription(string $action): string
     {
-        return "Venta #{$this->getKey()} (\${$this->monto_total}) ".$this->activityVerbo($action);
+        $monto = number_format((float) $this->monto_total, 2);
+
+        return match ($this->activityEvento($action)) {
+            'venta.registrada' => "Venta #{$this->getKey()} registrada por {$monto} ({$this->metodo_pago})",
+            'venta.anulada' => "Venta #{$this->getKey()} ANULADA por {$monto} - el stock vendido se repuso",
+            default => "Venta #{$this->getKey()} ({$monto}) ".$this->activityVerbo($action),
+        };
     }
 }

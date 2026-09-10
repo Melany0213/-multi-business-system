@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
+import BannerIntervencion from '@/Components/BannerIntervencion.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import SidebarLink from '@/Components/SidebarLink.vue';
@@ -118,6 +119,32 @@ function cambiarNegocio(event) {
                     </SidebarLink>
 
                     <SidebarLink
+                        v-if="page.props.negocioActivo.puedeVerReportes"
+                        :href="route('negocio.libro')"
+                        :active="route().current('negocio.libro')"
+                    >
+                        <template #icon>
+                            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                            </svg>
+                        </template>
+                        Libro de movimientos
+                    </SidebarLink>
+
+                    <SidebarLink
+                        v-if="page.props.negocioActivo.puedeVerReportes"
+                        :href="route('negocio.solicitudes.index')"
+                        :active="route().current('negocio.solicitudes.*')"
+                    >
+                        <template #icon>
+                            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+                            </svg>
+                        </template>
+                        Soporte
+                    </SidebarLink>
+
+                    <SidebarLink
                         v-if="page.props.negocioActivo.puedeConfigurarSalario"
                         :href="route('negocios.salario.edit', page.props.negocioActivo.id)"
                         :active="route().current('negocios.salario.*')"
@@ -173,6 +200,24 @@ function cambiarNegocio(event) {
                             </svg>
                         </template>
                         Actividad
+                    </SidebarLink>
+
+                    <SidebarLink :href="route('admin.solicitudes.index')" :active="route().current('admin.solicitudes.*')">
+                        <template #icon>
+                            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                            </svg>
+                        </template>
+                        Solicitudes
+                    </SidebarLink>
+
+                    <SidebarLink :href="route('admin.intervenciones.index')" :active="route().current('admin.intervenciones.*')">
+                        <template #icon>
+                            <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                            </svg>
+                        </template>
+                        Intervenciones
                     </SidebarLink>
                 </template>
             </nav>
@@ -274,6 +319,32 @@ function cambiarNegocio(event) {
                         </SidebarLink>
 
                         <SidebarLink
+                            v-if="page.props.negocioActivo.puedeVerReportes"
+                            :href="route('negocio.libro')"
+                            :active="route().current('negocio.libro')"
+                        >
+                            <template #icon>
+                                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                                </svg>
+                            </template>
+                            Libro de movimientos
+                        </SidebarLink>
+
+                        <SidebarLink
+                            v-if="page.props.negocioActivo.puedeVerReportes"
+                            :href="route('negocio.solicitudes.index')"
+                            :active="route().current('negocio.solicitudes.*')"
+                        >
+                            <template #icon>
+                                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+                                </svg>
+                            </template>
+                            Soporte
+                        </SidebarLink>
+
+                        <SidebarLink
                             v-if="page.props.negocioActivo.puedeConfigurarSalario"
                             :href="route('negocios.salario.edit', page.props.negocioActivo.id)"
                             :active="route().current('negocios.salario.*')"
@@ -330,6 +401,24 @@ function cambiarNegocio(event) {
                             </template>
                             Actividad
                         </SidebarLink>
+
+                        <SidebarLink :href="route('admin.solicitudes.index')" :active="route().current('admin.solicitudes.*')">
+                            <template #icon>
+                                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                                </svg>
+                            </template>
+                            Solicitudes
+                        </SidebarLink>
+
+                        <SidebarLink :href="route('admin.intervenciones.index')" :active="route().current('admin.intervenciones.*')">
+                            <template #icon>
+                                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                </svg>
+                            </template>
+                            Intervenciones
+                        </SidebarLink>
                     </template>
                 </nav>
             </aside>
@@ -381,6 +470,8 @@ function cambiarNegocio(event) {
                     </template>
                 </Dropdown>
             </div>
+
+            <BannerIntervencion />
 
             <!-- Page Heading -->
             <header class="bg-surface shadow" v-if="$slots.header">

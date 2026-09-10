@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Requisitos Multinegocio</title>
+<style>
+  /* Sin conexión, esta fuente no carga y el navegador usa la alternativa
+     del sistema (definida en cada regla font-family) — el checklist
+     funciona igual, solo cambia la tipografía. */
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  html{ color-scheme: light dark; }
+  body{ margin:0; }
+
+  :root{
+    --bg:#EEF1EA;
+    --surface:#FFFFFF;
+    --surface-2:#E4E9DE;
+    --ink:#1C2620;
+    --ink-2:#49564C;
+    --ink-3:#7C8A7A;
+    --line:#CFD8C6;
+    --line-strong:#B7C4AC;
+    --accent:#24594C;
+    --accent-ink:#0E332A;
+    --accent-soft:#DCEAE3;
+    --done:#3E7D4A;
+    --done-soft:#E1F0DE;
+    --partial:#9C6C1F;
+    --partial-soft:#F5E9D0;
+    --pending:#7B4F8C;
+    --pending-soft:#EEE1F2;
+    --shadow: 0 1px 2px rgba(20,30,20,.06), 0 8px 24px -12px rgba(20,30,20,.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#10160F;
+      --surface:#171F17;
+      --surface-2:#1E271C;
+      --ink:#E7EDE2;
+      --ink-2:#ACB9A5;
+      --ink-3:#748069;
+      --line:#31402D;
+      --line-strong:#425338;
+      --accent:#7BC4A8;
+      --accent-ink:#0E1B15;
+      --accent-soft:#1B332B;
+      --done:#8AC796;
+      --done-soft:#1C3320;
+      --partial:#E0B25E;
+      --partial-soft:#382C13;
+      --pending:#D2A5E3;
+      --pending-soft:#33223A;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 28px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#10160F;
+    --surface:#171F17;
+    --surface-2:#1E271C;
+    --ink:#E7EDE2;
+    --ink-2:#ACB9A5;
+    --ink-3:#748069;
+    --line:#31402D;
+    --line-strong:#425338;
+    --accent:#7BC4A8;
+    --accent-ink:#0E1B15;
+    --accent-soft:#1B332B;
+    --done:#8AC796;
+    --done-soft:#1C3320;
+    --partial:#E0B25E;
+    --partial-soft:#382C13;
+    --pending:#D2A5E3;
+    --pending-soft:#33223A;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 28px -14px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Instrument Sans', system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{text-wrap:balance; font-family:'Instrument Sans', system-ui, sans-serif;}
+  code, .mono{font-family:'IBM Plex Mono', ui-monospace, monospace;}
+  ::selection{background:var(--accent-soft); color:var(--accent-ink);}
+
+  .shell{
+    display:grid;
+    grid-template-columns: 272px minmax(0,1fr);
+    min-height:100vh;
+    max-width:1280px;
+    margin:0 auto;
+  }
+
+  /* ---------- Rail ---------- */
+  .rail{
+    position:sticky; top:0; align-self:start;
+    height:100vh; overflow-y:auto;
+    padding:28px 20px 28px 28px;
+    border-right:1px solid var(--line);
+    display:flex; flex-direction:column; gap:22px;
+  }
+  .brand{display:flex; align-items:baseline; gap:8px;}
+  .brand .mark{
+    width:10px; height:10px; border-radius:2px; background:var(--accent);
+    transform:rotate(45deg); flex:none; margin-bottom:2px;
+  }
+  .brand h1{margin:0; font-size:17px; font-weight:700; letter-spacing:-.01em;}
+  .brand .tag{font-size:11px; color:var(--ink-3); font-family:'IBM Plex Mono', monospace;}
+
+  .progress-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:16px; box-shadow:var(--shadow);
+  }
+  .progress-card .num{
+    font-family:'IBM Plex Mono', monospace; font-size:28px; font-weight:600;
+    font-variant-numeric:tabular-nums; color:var(--accent);
+  }
+  .progress-card .label{font-size:12px; color:var(--ink-2); margin-top:2px;}
+  .progress-bar{
+    margin-top:12px; height:6px; border-radius:99px; background:var(--surface-2);
+    overflow:hidden; border:1px solid var(--line);
+  }
+  .progress-bar > span{
+    display:block; height:100%; background:var(--accent);
+    transition:width .3s ease;
+  }
+  .counts{display:flex; flex-direction:column; gap:6px; margin-top:14px; font-size:12.5px;}
+  .counts .row{display:flex; align-items:center; justify-content:space-between; color:var(--ink-2);}
+  .dot{width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:7px;}
+
+  nav.toc{display:flex; flex-direction:column; gap:2px;}
+  nav.toc a{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:7px 10px; border-radius:8px; color:var(--ink-2); text-decoration:none;
+    font-size:13px; line-height:1.3;
+  }
+  nav.toc a:hover{background:var(--surface-2); color:var(--ink);}
+  nav.toc a .n{font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-3);}
+
+  .rail-foot{margin-top:auto; font-size:11.5px; color:var(--ink-3); line-height:1.5;}
+
+  /* ---------- Main ---------- */
+  main{padding:40px 44px 100px;}
+  header.top{margin-bottom:34px; max-width:640px;}
+  header.top .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--accent); margin-bottom:10px; display:block;
+  }
+  header.top h2{font-size:32px; margin:0 0 12px; letter-spacing:-.015em;}
+  header.top p{font-size:15px; line-height:1.65; color:var(--ink-2); margin:0;}
+
+  .toolbar{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    margin:26px 0 30px; padding:14px 16px; background:var(--surface);
+    border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow);
+  }
+  .search{
+    flex:1 1 200px; min-width:160px; position:relative;
+  }
+  .search input{
+    width:100%; padding:8px 12px 8px 32px; border-radius:8px; border:1px solid var(--line-strong);
+    background:var(--bg); color:var(--ink); font-size:13.5px; font-family:inherit;
+  }
+  .search input:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  .search svg{position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--ink-3);}
+
+  .chip{
+    font-size:12.5px; padding:7px 12px; border-radius:99px; border:1px solid var(--line-strong);
+    background:var(--surface); color:var(--ink-2); cursor:pointer; font-family:inherit;
+    display:flex; align-items:center; gap:6px; white-space:nowrap;
+  }
+  .chip:focus-visible{outline:2px solid var(--accent); outline-offset:1px;}
+  .chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:600;}
+  .chip .dot{margin-right:0;}
+
+  section.module{margin-bottom:44px; scroll-margin-top:24px;}
+  section.module > .module-head{
+    display:flex; align-items:baseline; gap:12px; margin-bottom:16px;
+    border-bottom:1px solid var(--line); padding-bottom:10px;
+  }
+  section.module > .module-head .idx{
+    font-family:'IBM Plex Mono', monospace; color:var(--ink-3); font-size:13px;
+  }
+  section.module > .module-head h3{font-size:19px; margin:0; letter-spacing:-.01em;}
+  section.module > .module-head .count{
+    margin-left:auto; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-3);
+  }
+
+  .rf{
+    display:grid; grid-template-columns: auto auto 1fr auto auto;
+    gap:14px; align-items:start;
+    padding:14px 16px; border:1px solid var(--line); border-radius:10px;
+    background:var(--surface); margin-bottom:8px; box-shadow:var(--shadow);
+  }
+  .rf.is-hidden{display:none;}
+  .rf .id{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--ink-3);
+    padding-top:2px; white-space:nowrap;
+  }
+  .rf .checkbox{padding-top:1px;}
+  .rf .checkbox input{
+    appearance:none; width:18px; height:18px; border-radius:5px; border:1.5px solid var(--line-strong);
+    background:var(--surface); cursor:pointer; display:grid; place-content:center;
+  }
+  .rf .checkbox input::after{
+    content:""; width:9px; height:9px; border-radius:2px; background:var(--accent);
+    transform:scale(0); transition:transform .12s ease;
+  }
+  .rf .checkbox input:checked::after{transform:scale(1);}
+  .rf .checkbox input:checked{border-color:var(--accent);}
+  .rf .checkbox input:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .rf .body h4{margin:0 0 4px; font-size:14.5px; font-weight:600; letter-spacing:-.005em;}
+  .rf .body p{margin:0; font-size:13.5px; line-height:1.55; color:var(--ink-2);}
+  .rf .body .question{
+    margin-top:8px; padding:8px 10px; border-radius:7px; background:var(--pending-soft);
+    color:var(--ink); font-size:12.5px; line-height:1.5; border-left:3px solid var(--pending);
+  }
+  .rf .body .question b{color:var(--pending); font-weight:700;}
+
+  .status{
+    font-size:11px; font-weight:700; padding:4px 9px; border-radius:99px;
+    white-space:nowrap; font-family:'IBM Plex Mono', monospace; letter-spacing:.01em;
+    height:fit-content;
+  }
+  .status.hecho{background:var(--done-soft); color:var(--done);}
+  .status.parcial{background:var(--partial-soft); color:var(--partial);}
+  .status.pendiente{background:var(--pending-soft); color:var(--pending);}
+
+  .rf .verified-tag{
+    font-size:10.5px; color:var(--accent); font-family:'IBM Plex Mono', monospace;
+    white-space:nowrap; opacity:0; transition:opacity .15s ease; padding-top:3px;
+  }
+  .rf.is-verified .verified-tag{opacity:1;}
+
+  .empty-state{
+    text-align:center; padding:40px 20px; color:var(--ink-3); font-size:13.5px;
+    border:1px dashed var(--line-strong); border-radius:12px;
+  }
+
+  @media (max-width: 860px){
+    .shell{grid-template-columns: 1fr;}
+    .rail{position:relative; height:auto; border-right:none; border-bottom:1px solid var(--line);}
+    main{padding:28px 20px 80px;}
+    .rf{grid-template-columns: auto 1fr; grid-template-areas:"id status" "check body" "tag tag";}
+    .rf .id{grid-area:id; justify-self:end;}
+    .rf .status{grid-area:status;}
+    .rf .checkbox{grid-area:check;}
+    .rf .body{grid-area:body;}
+    .rf .verified-tag{grid-area:tag; opacity:1; color:var(--ink-3);}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">
+      <span class="mark"></span>
+      <div>
+        <h1>Multinegocio</h1>
+        <div class="tag">requisitos · verificación</div>
+      </div>
+    </div>
+
+    <div class="progress-card">
+      <div class="num" id="verified-count">0/47</div>
+      <div class="label">verificados por vos</div>
+      <div class="progress-bar"><span id="progress-fill" style="width:0%"></span></div>
+      <div class="counts">
+        <div class="row"><span><i class="dot" style="background:var(--done)"></i>Hecho</span><span id="count-hecho" class="mono">0</span></div>
+        <div class="row"><span><i class="dot" style="background:var(--partial)"></i>Parcial</span><span id="count-parcial" class="mono">0</span></div>
+        <div class="row"><span><i class="dot" style="background:var(--pending)"></i>Por definir</span><span id="count-pendiente" class="mono">0</span></div>
+      </div>
+    </div>
+
+    <nav class="toc" id="toc"></nav>
+
+    <p class="rail-foot">Tu progreso se guarda solo en este navegador. Si abrís esto en otra máquina, empieza de cero.</p>
+  </aside>
+
+  <main>
+    <header class="top">
+      <span class="eyebrow">Etapas 1–4 · construido hasta hoy</span>
+      <h2>Lista de requisitos funcionales</h2>
+      <p>
+        Todo lo que el sistema hace hoy, agrupado por módulo, para que revises cada punto en la app real
+        y lo marques. Los que dicen <strong>por definir</strong> traen la pregunta puntual que falta responder —
+        no son errores, son decisiones que solo vos podés tomar.
+      </p>
+    </header>
+
+    <div class="toolbar">
+      <div class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="search" placeholder="Buscar por palabra…" />
+      </div>
+      <button class="chip" data-filter="all" aria-pressed="true">Todos</button>
+      <button class="chip" data-filter="hecho"><i class="dot" style="background:var(--done)"></i>Hecho</button>
+      <button class="chip" data-filter="parcial"><i class="dot" style="background:var(--partial)"></i>Parcial</button>
+      <button class="chip" data-filter="pendiente"><i class="dot" style="background:var(--pending)"></i>Por definir</button>
+      <button class="chip" data-filter="unverified">Sin verificar</button>
+    </div>
+
+    <div id="modules"></div>
+    <div id="empty" class="empty-state" hidden>No hay RF que coincidan con ese filtro/búsqueda.</div>
+  </main>
+</div>
+
+<script>
+(function(){
+  var DATA = [
+    { id:'identidad', title:'Identidad y acceso', items:[
+      {id:'RF-01', t:'Alta de usuarios con datos completos', d:'Nombre, primer y segundo apellido, username autogenerado, email, teléfono y carné de identidad.', s:'hecho'},
+      {id:'RF-02', t:'Inicio de sesión por username, no por email', d:'El usuario entra con el usuario generado por el sistema (ej. "crmelany"), no con su correo.', s:'hecho'},
+      {id:'RF-03', t:'Roles por negocio con vigencia', d:'Cada Acceso define rol (dueño/administrador/dependiente) y vigencia: fija, diaria, semanal (con días) o mensual, con horario.', s:'hecho'},
+      {id:'RF-04', t:'Estado global del usuario', d:'Activo / suspendido / bloqueado, independiente de si tiene vigencia horaria en ese momento.', s:'hecho'},
+      {id:'RF-05', t:'Un mismo administrador en varios negocios', d:'Un administrador (o "almacenero") puede estar a cargo de varios negocios del mismo dueño a la vez.', s:'hecho'},
+    ]},
+
+    { id:'cuentas', title:'Cuentas (clientes de la plataforma)', items:[
+      {id:'RF-06', t:'Alta de cuenta con su dueño', d:'El Super Admin crea la cuenta y, en el mismo paso, el usuario dueño (Super Admin del Negocio).', s:'hecho'},
+      {id:'RF-07', t:'Planes con límites y precio', d:'Cada plan define máximo de negocios/usuarios y una mensualidad; una cuenta sin plan no tiene tope.', s:'hecho'},
+      {id:'RF-08', t:'Suspender/reactivar en cascada', d:'Suspender una cuenta suspende a su dueño y dependientes, pero respeta a los que ya estaban bloqueados manualmente. Reactivar solo restaura a esos.', s:'hecho'},
+      {id:'RF-09', t:'Editar y eliminar cuenta', d:'Cambiar datos de la cuenta o eliminarla (borra sus negocios en cascada, no a los usuarios).', s:'hecho'},
+      {id:'RF-10', t:'Ficha de cada usuario de la cuenta', d:'Desde Cuentas → detalle, un modal por usuario con sus datos completos y accesos por negocio/rol/vigencia.', s:'hecho'},
+    ]},
+
+    { id:'negocios', title:'Negocios', items:[
+      {id:'RF-11', t:'Varios negocios por dueño', d:'Cada uno con su propio rubro, tipo (productos/servicios/mixto) y moneda.', s:'hecho'},
+      {id:'RF-12', t:'Tope de negocios según el plan', d:'No se puede crear un negocio nuevo si la cuenta ya alcanzó el límite de su plan.', s:'hecho'},
+      {id:'RF-13', t:'Activar / desactivar negocio', d:'Un negocio inactivo deja de ser operable sin borrar su historial.', s:'hecho'},
+      {id:'RF-14', t:'Selector de "negocio activo"', d:'El usuario elige con qué negocio está operando en cada momento desde el sidebar.', s:'hecho'},
+      {id:'RF-15', t:'Salario del cajero, configurable por el dueño', d:'Por negocio: % de la utilidad, % de la venta, o monto fijo por turno. Sin fórmula impuesta por el sistema.', s:'hecho'},
+    ]},
+
+    { id:'inventario', title:'Inventario', items:[
+      {id:'RF-16', t:'Varios almacenes por negocio', d:'Un negocio puede tener más de una ubicación con inventario propio.', s:'hecho'},
+      {id:'RF-17', t:'Catálogo compartido a nivel Cuenta', d:'El mismo producto puede ofrecerse en varios negocios del dueño desde un catálogo común.',
+        s:'pendiente', q:'Vos misma marcaste esto como no confirmado del todo: ¿el catálogo debe ser compartido entre negocios de una cuenta (como está hoy) o completamente independiente por negocio? Hoy está implementado compartido, por ser más simple y reversible.'},
+      {id:'RF-18', t:'Precio y costo independientes por negocio', d:'El mismo producto puede costar distinto en cada negocio (ej. más caro en la pizzería que en el supermercado).', s:'hecho'},
+      {id:'RF-19', t:'Stock independiente por almacén', d:'La cantidad disponible se lleva por almacén, no por negocio ni por cuenta.', s:'hecho'},
+      {id:'RF-20', t:'Ver stock disponible al vender', d:'La pantalla de venta muestra el stock del almacén del turno junto a cada producto.',
+        s:'parcial', q:'Hoy se ve como un número simple ("14"), no como "14/15" (disponible/total) igual que Zeta POS — esa segunda cifra tiene sentido una vez exista Reserva de Mercancía (RF-25), que todavía no está.'},
+    ]},
+
+    { id:'traspasos', title:'Traspasos de mercancía', items:[
+      {id:'RF-21', t:'Solicitud de traspaso', d:'La dependienta o el administrador solicitan mover producto de un almacén a otro, incluso entre negocios distintos de la misma cuenta.', s:'hecho'},
+      {id:'RF-22', t:'Autorización solo por el administrador de origen', d:'Únicamente el administrador (o dueño) del negocio de ORIGEN puede autorizar o rechazar la salida — la dependienta no puede.', s:'hecho'},
+      {id:'RF-23', t:'Confirmación en el destino', d:'Alguien del negocio DESTINO (dependienta o administrador) confirma que la mercancía llegó.', s:'hecho'},
+      {id:'RF-24', t:'Momento exacto del movimiento de stock', d:'El stock se descuenta del origen al AUTORIZAR (no al solicitar) y se suma al destino al CONFIRMAR.', s:'hecho'},
+      {id:'RF-25', t:'Reserva de mercancía', d:'Apartar stock sin completar una venta todavía, como se ve en Zeta POS.', s:'pendiente', q:'No implementado. ¿Quién puede reservar, por cuánto tiempo se mantiene la reserva, y qué pasa si nadie la retira?'},
+    ]},
+
+    { id:'turnos', title:'Turnos de caja', items:[
+      {id:'RF-26', t:'Cada quien abre su propio turno', d:'El turno queda a nombre de quien está logueado — nunca se abre "para" otro usuario.', s:'hecho'},
+      {id:'RF-27', t:'Datos de apertura', d:'Almacén de dónde sale el stock, nombre del dispositivo/terminal, y tasa de USD/EUR del día.', s:'hecho'},
+      {id:'RF-28', t:'Un turno abierto por persona y negocio', d:'No se puede abrir un segundo turno si ya hay uno abierto sin cerrar en ese negocio.', s:'hecho'},
+      {id:'RF-29', t:'Cierre con conteo de efectivo', d:'Conteo por denominación de la moneda local, más cantidad de billetes USD y EUR — igual que el modal de Zeta.', s:'hecho'},
+      {id:'RF-30', t:'Quién puede cerrar un turno', d:'El propio cajero, o alguien con permiso de gestionar usuarios (típicamente el administrador o el dueño).', s:'hecho'},
+      {id:'RF-31', t:'Varios turnos simultáneos', d:'Distintos cajeros pueden tener cada uno su turno abierto al mismo tiempo en el mismo negocio, en dispositivos distintos.', s:'hecho'},
+    ]},
+
+    { id:'ventas', title:'Ventas', items:[
+      {id:'RF-32', t:'Registrar una venta dentro del turno', d:'La dependienta "pasa la orden": elige productos y cantidades dentro de su turno abierto.', s:'hecho'},
+      {id:'RF-33', t:'Métodos de pago', d:'Efectivo, tarjeta o transferencia, por venta.', s:'hecho'},
+      {id:'RF-34', t:'Descuento de stock inmediato', d:'Al procesar el pago se descuenta al instante del almacén del turno.', s:'hecho'},
+      {id:'RF-35', t:'Precio histórico de cada venta', d:'La venta guarda el precio y costo del momento; si el producto cambia de precio después, las ventas viejas no se alteran.', s:'hecho'},
+      {id:'RF-36', t:'Identificador propio por venta (UUID)', d:'Cada venta tiene un identificador generado en el momento, no solo el correlativo del servidor.', s:'hecho', q:'Esto es la base para el futuro cliente offline — la app Android en sí (síncronización real cuando no hay internet) todavía no está construida.'},
+      {id:'RF-37', t:'Pago dividido entre efectivo, tarjeta y transferencia', d:'Que una misma venta se pague combinando métodos o monedas distintas.', s:'pendiente', q:'Hoy una venta usa un solo método de pago. ¿Hace falta permitir pago mixto en una misma venta, o el flujo real siempre usa un solo método?'},
+      {id:'RF-38', t:'Anular una venta', d:'El permiso "ventas.anular" ya existe en el sistema de roles.', s:'pendiente', q:'El permiso está reservado pero no tiene pantalla ni acción todavía. ¿Quién puede anular, hasta cuándo (¿solo en el turno abierto?), y qué pasa con el stock y el total del turno al anular?'},
+    ]},
+
+    { id:'cierre', title:'Cierre de turno y dinero', items:[
+      {id:'RF-39', t:'Cálculo del salario', d:'Se calcula al cerrar el turno según la configuración del negocio (RF-15): % utilidad, % venta o monto fijo.', s:'hecho'},
+      {id:'RF-40', t:'Depósito a entregar', d:'Depósito = Venta total − Transferencias − Salario. Fórmula deducida de las capturas de Zeta POS.', s:'hecho', q:'Confirmá que esta cuenta es la correcta — la infererí comparando varios turnos cerrados en tus capturas, pero nunca la dijiste en palabras.'},
+      {id:'RF-41', t:'Reconciliación de efectivo', d:'Comparar lo contado en el conteo de denominaciones contra lo que se esperaba en caja.', s:'parcial', q:'El dato de "total contado" ya se guarda, pero falta que la pantalla resalte visualmente si sobra o falta dinero respecto a lo esperado.'},
+    ]},
+
+    { id:'panel', title:'Panel del Super Admin', items:[
+      {id:'RF-42', t:'Métricas agregadas de la plataforma', d:'Cuentas activas/suspendidas, negocios, usuarios e ingreso mensual estimado por planes.', s:'hecho'},
+      {id:'RF-43', t:'Listado global de negocios', d:'Todos los negocios de todas las cuentas en una sola tabla, no cuenta por cuenta.', s:'hecho'},
+      {id:'RF-44', t:'Bitácora de actividad por usuario', d:'Quién creó, editó o eliminó qué (cuentas, negocios, almacenes, productos, accesos, traspasos, turnos, ventas), filtrable por usuario.', s:'hecho'},
+      {id:'RF-45', t:'Ventas y utilidad consolidadas de todos los negocios', d:'Un dashboard con Clientes/Venta/Utilidad/Salario de TODA la plataforma comparado contra "ayer", como el de Zeta.',
+        s:'pendiente', q:'El panel de hoy solo tiene lo financiero de suscripción de planes. Faltaría sumar ventas/utilidad reales una vez que haya suficientes turnos cerrados para que el número tenga sentido.'},
+    ]},
+
+    { id:'auditoria', title:'Auditoría, soporte e intervenciones', items:[
+      {id:'RF-48', t:'Libro de movimientos con eventos con nombre propio', d:'Cada movimiento se guarda como un evento nombrado (turno abierto, traspaso autorizado, precio cambiado, stock ajustado, venta anulada) y no como un genérico "actualizado". Una entrada debe entenderse leyéndola, sin abrir el módulo.', s:'hecho'},
+      {id:'RF-49', t:'Cobertura total de los movimientos del negocio', d:'Quedan registrados todos: aperturas y cierres de turno, ventas y anulaciones, los tres pasos del traspaso, cambios de precio y de costo, ajustes manuales de stock, altas y bajas de usuarios y accesos, e inicios y cierres de sesión.', s:'hecho'},
+      {id:'RF-50', t:'Libro inmutable y verificable', d:'El libro es solo de escritura: no existe pantalla, ruta ni permiso para editar o borrar una entrada, tampoco para el Super Admin. Cada entrada encadena un hash de la anterior, de modo que una alteración hecha por fuera del sistema rompa la cadena y quede en evidencia.', s:'hecho'},
+      {id:'RF-51', t:'Expediente del negocio, en solo lectura', d:'El Super Admin abre cualquier negocio y ve, sin poder tocar nada, lo mismo que ve el dueño: almacenes, productos con sus precios, traspasos, turnos, ventas, reportes, configuración de salario, usuarios con rol y vigencia, y el libro de movimientos filtrado a ese negocio.', s:'hecho'},
+      {id:'RF-52', t:'Expediente del usuario', d:'Ficha de cualquier usuario con los negocios a los que entra y con qué vigencia, su línea de tiempo de acciones, sus turnos con el descuadre de cada cierre, sus ventas y sus anulaciones.', s:'hecho'},
+      {id:'RF-53', t:'"Ver como", en modo lectura', d:'El Super Admin puede mirar el sistema con la vista exacta de un usuario para reproducir lo que ese usuario reporta. No pide motivo ni autorización porque no permite escribir, pero queda registrado.', s:'parcial', q:'La lectura ya esta resuelta por el Expediente del negocio (RF-51), que es donde el soporte mira sin ceremonia. Lo que no se construyo es la vista pixel a pixel con la sesion del propio usuario; hace falta solo si aparece un fallo que dependa de como se le renderiza a EL la pantalla.'},
+      {id:'RF-54', t:'Intervención de soporte para poder escribir', d:'Escribir en un negocio ajeno exige abrir una intervención: contraseña otra vez, motivo obligatorio, alcance a UN solo negocio y tiempo limitado que vence solo. Mientras dura, un aviso permanente e imposible de ocultar muestra el negocio, el motivo y el tiempo restante.', s:'hecho'},
+      {id:'RF-55', t:'Límites que la intervención no levanta', d:'La intervención da los permisos del dueño, nunca más que eso: no permite editar ni borrar el libro de movimientos, ni cambiar contraseñas de otros, ni eliminar cuentas, negocios o ventas cerradas. Una venta mal hecha se anula con motivo, no se borra.', s:'hecho', q:'Implementado: el libro no tiene ruta de edicion ni de borrado, no existe funcion para cambiar la contrasena de otro, una venta solo se anula con el turno abierto y los negocios se desactivan en vez de borrarse. Nota: eliminar una CUENTA sigue siendo una accion comercial del panel (RF-09), separada del mecanismo de intervenciones.'},
+      {id:'RF-56', t:'Identidad real en cada cambio, sin suplantación', d:'El Super Admin actúa con su propio nombre y con los permisos del dueño, nunca haciéndose pasar por él: el registro dice "Melany, en la intervención 42, cambió el costo del producto X", jamás "Carlos cambió el costo".', s:'hecho'},
+      {id:'RF-57', t:'Acta automática de la intervención', d:'Al cerrarse, la intervención genera sola su acta a partir del libro de movimientos: qué se tocó, valores antes y después, cuánto duró y con qué motivo. El acta no se escribe a mano y tampoco se puede editar.', s:'hecho'},
+      {id:'RF-58', t:'Solicitud de revisión hecha por el dueño', d:'El dueño abre una solicitud desde su negocio describiendo qué revisar o corregir, y puede señalar el registro concreto (esta venta, este producto). La solicitud avanza por estados hasta resolverse o rechazarse.', s:'hecho'},
+      {id:'RF-59', t:'Intervención nacida de una solicitud', d:'Cuando la intervención responde a una solicitud del dueño, el motivo no lo escribe el Super Admin: es la solicitud firmada por el dueño, y el consentimiento queda probado en el registro. Este es el camino normal; la intervención por iniciativa propia del Super Admin es la excepción, con motivo escrito y aviso inmediato al dueño.', s:'hecho'},
+      {id:'RF-60', t:'La conformidad del dueño cierra el ciclo', d:'Cerrada la intervención, el dueño recibe el acta y marca si quedó resuelto o reabre la solicitud. El ciclo lo cierra el dueño, no el Super Admin: eso convierte el acta en un documento bilateral y no en un informe del Super Admin sobre sí mismo.', s:'hecho'},
+      {id:'RF-61', t:'El dueño ve su propio libro y las intervenciones sobre su negocio', d:'El dueño tiene en su negocio el mismo libro de movimientos y la lista de todas las veces que el soporte entró, con motivo, duración y acta. No depende de que las pida.', s:'hecho'},
+      {id:'RF-62', t:'Retención y archivado del libro', d:'El libro crece sin parar y termina siendo la tabla más grande del sistema. Hay que definir cuánto tiempo queda en línea consultable y cómo se archiva lo anterior sin perderlo ni romper la cadena de hash.', s:'pendiente', q:'Sin definir. El libro ya crece con cada movimiento, asi que conviene decidirlo antes de que la tabla sea grande. Cuanto tiempo hacia atras necesitas consultar en pantalla (un ano, dos), y el resto puede quedar archivado y recuperable a pedido?'},
+    ]},
+
+    { id:'futuro', title:'A futuro (fuera del alcance actual)', items:[
+      {id:'RF-46', t:'App Android con soporte offline real', d:'Cliente móvil nativo que sigue vendiendo sin internet y sincroniza al volver la conexión.', s:'pendiente', q:'No iniciado. La base (UUID en ventas) ya está puesta para cuando llegue esta etapa.'},
+      {id:'RF-47', t:'Grilla de productos con imágenes en el punto de venta', d:'Vista tipo POS con tarjetas de producto e imagen, como en Zeta.', s:'pendiente', q:'Hoy Registrar Venta es una tabla simple. ¿Vale la pena invertir en la grilla visual ahora, o priorizamos otras etapas primero?'},
+    ]},
+  ];
+
+  var STATUS_LABEL = { hecho:'Hecho', parcial:'Parcial', pendiente:'Por definir' };
+  var STORAGE_KEY = 'rf-multinegocio-verificados';
+
+  function loadVerified(){
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch(e){ return {}; }
+  }
+  function saveVerified(map){
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)); }
+    catch(e){ /* almacenamiento no disponible: se sigue viendo, no se guarda */ }
+  }
+
+  var verified = loadVerified();
+  var allItems = [];
+  DATA.forEach(function(mod){ mod.items.forEach(function(it){ it._mod = mod.id; allItems.push(it); }); });
+  var TOTAL = allItems.length;
+
+  var modulesEl = document.getElementById('modules');
+  var tocEl = document.getElementById('toc');
+
+  DATA.forEach(function(mod){
+    var navA = document.createElement('a');
+    navA.href = '#mod-' + mod.id;
+    navA.innerHTML = '<span>' + mod.title + '</span><span class="n">' + mod.items.length + '</span>';
+    tocEl.appendChild(navA);
+
+    var section = document.createElement('section');
+    section.className = 'module';
+    section.id = 'mod-' + mod.id;
+
+    var head = document.createElement('div');
+    head.className = 'module-head';
+    head.innerHTML = '<h3>' + mod.title + '</h3><span class="count">' + mod.items.length + ' RF</span>';
+    section.appendChild(head);
+
+    mod.items.forEach(function(it){
+      var row = document.createElement('div');
+      row.className = 'rf';
+      row.dataset.status = it.s;
+      row.dataset.search = (it.id + ' ' + it.t + ' ' + it.d + ' ' + (it.q||'')).toLowerCase();
+      row.dataset.rfid = it.id;
+
+      var questionHtml = it.q ? '<div class="question"><b>Qué falta definir —</b> ' + it.q + '</div>' : '';
+
+      row.innerHTML =
+        '<span class="id">' + it.id + '</span>' +
+        '<span class="checkbox"><input type="checkbox" aria-label="Marcar ' + it.id + ' como verificado" ' + (verified[it.id] ? 'checked' : '') + '></span>' +
+        '<span class="body"><h4>' + it.t + '</h4><p>' + it.d + '</p>' + questionHtml + '</span>' +
+        '<span class="status ' + it.s + '">' + STATUS_LABEL[it.s] + '</span>' +
+        '<span class="verified-tag">✓ verificado</span>';
+
+      if (verified[it.id]) row.classList.add('is-verified');
+
+      var cb = row.querySelector('input');
+      cb.addEventListener('change', function(){
+        verified[it.id] = cb.checked;
+        row.classList.toggle('is-verified', cb.checked);
+        saveVerified(verified);
+        updateProgress();
+      });
+
+      section.appendChild(row);
+    });
+
+    modulesEl.appendChild(section);
+  });
+
+  function updateProgress(){
+    var count = 0;
+    for (var k in verified) if (verified[k]) count++;
+    document.getElementById('verified-count').textContent = count + '/' + TOTAL;
+    document.getElementById('progress-fill').style.width = (TOTAL ? (count / TOTAL * 100) : 0) + '%';
+
+    var byStatus = { hecho:0, parcial:0, pendiente:0 };
+    allItems.forEach(function(it){ byStatus[it.s]++; });
+    document.getElementById('count-hecho').textContent = byStatus.hecho;
+    document.getElementById('count-parcial').textContent = byStatus.parcial;
+    document.getElementById('count-pendiente').textContent = byStatus.pendiente;
+  }
+  updateProgress();
+
+  // ---- filtros + búsqueda ----
+  var currentFilter = 'all';
+  var searchTerm = '';
+  var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
+
+  function applyFilters(){
+    var rows = document.querySelectorAll('.rf');
+    var visibleCount = 0;
+    rows.forEach(function(row){
+      var matchesFilter =
+        currentFilter === 'all' ||
+        (currentFilter === 'unverified' && !verified[row.dataset.rfid]) ||
+        row.dataset.status === currentFilter;
+      var matchesSearch = !searchTerm || row.dataset.search.indexOf(searchTerm) !== -1;
+      var show = matchesFilter && matchesSearch;
+      row.classList.toggle('is-hidden', !show);
+      if (show) visibleCount++;
+    });
+
+    document.querySelectorAll('.module').forEach(function(section){
+      var visible = section.querySelectorAll('.rf:not(.is-hidden)').length;
+      section.hidden = visible === 0;
+    });
+
+    document.getElementById('empty').hidden = visibleCount !== 0;
+  }
+
+  chips.forEach(function(chip){
+    chip.addEventListener('click', function(){
+      chips.forEach(function(c){ c.setAttribute('aria-pressed', 'false'); });
+      chip.setAttribute('aria-pressed', 'true');
+      currentFilter = chip.dataset.filter;
+      applyFilters();
+    });
+  });
+
+  document.getElementById('search').addEventListener('input', function(e){
+    searchTerm = e.target.value.trim().toLowerCase();
+    applyFilters();
+  });
+})();
+</script>
+</body>
+</html>
