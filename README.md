@@ -1,58 +1,60 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistema Multinegocio
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Plataforma SaaS multi-tenant para administrar varios negocios desde un mismo sistema. Cada negocio tiene sus datos aislados, sus usuarios con roles y accesos con vigencia, y un libro de movimientos encadenado que detecta cualquier alteración.
 
-## About Laravel
+Nació de la dificultad real de un dueño de varios negocios que ofrecía bienes y servicios: llevar tanta información junta era complicado, sobre todo al tener que entregar el inventario.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Funcionalidades
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Negocios y rubros:** alta de negocios, activación o desactivación, y configuración por rubro.
+- **Inventario:** almacenes, productos y traspasos entre almacenes.
+- **Ventas:** turnos de caja, ventas con detalle de productos y reportes por negocio.
+- **Libro de movimientos:** registro de eventos del negocio encadenado con SHA-256. Si una entrada se altera, la cadena se rompe y se detecta.
+- **Accesos y roles:** permisos por usuario, negocio y rol, con vigencia por fechas, días y horario.
+- **Soporte:** solicitudes de soporte e intervenciones auditadas de administración.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Arquitectura multi-tenant
 
-## Learning Laravel
+- **Aislamiento por columna:** las entidades de negocio comparten base de datos y llevan una columna `business_id`. Los controladores verifican la pertenencia del recurso antes de devolverlo o modificarlo.
+- **Negocio activo:** el negocio con el que trabaja el usuario se resuelve desde el contexto de sesión, no desde un filtro opcional en cada consulta (`NegocioActivoResolver`).
+- **Permisos con vigencia:** la autorización se resuelve en un servicio independiente de la autenticación (`AccessScheduler`), que evalúa si un acceso está activo en el momento de la petición.
+- **Auditoría por negocio:** cada evento se guarda con su `business_id` y un hash SHA-256 que incluye el hash del evento anterior.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Stack
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- **Backend:** Laravel 13, PHP 8.3+, Spatie Permission
+- **Frontend:** Inertia.js 2 con Vue 3, Tailwind CSS
+- **Base de datos:** SQLite por defecto; PostgreSQL configurable con `DB_CONNECTION=pgsql`
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Puesta en marcha
 
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Requisitos: PHP 8.3 o superior, Composer, Node.js y una base de datos.
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer run setup
+composer run dev
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+`setup` instala dependencias, crea el archivo `.env` a partir de `.env.example`, genera la clave de la aplicación, ejecuta las migraciones y compila los assets. `dev` levanta el servidor, la cola, el visor de logs y Vite.
 
-## Contributing
+Para usar PostgreSQL, define en `.env`:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=multinegocio
+DB_USERNAME=postgres
+DB_PASSWORD=
+```
 
-## Code of Conduct
+## Estructura
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```
+app/
+  Models/            # Business, Access, Almacen, Producto, Traspaso, Turno, Venta, ActivityLog...
+  Services/          # NegocioActivoResolver, AccessScheduler, Bitacora, Intervenciones
+  Http/Controllers/  # Negocio, Inventario, Ventas, Admin
+routes/web.php       # rutas por módulo, protegidas con autenticación y verificación
+docs/                # documentación de requisitos
+```
